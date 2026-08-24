@@ -1,46 +1,36 @@
-/**
- * Vercel Edge Function — Sueta Config Generator
- */
-
 const SUKI_URL = "https://raw.githubusercontent.com/gh8y4gwmsq-web/sUukaaa/refs/heads/main/suki.txt";
 
-export const config = {
-  runtime: "edge",
+export default {
+  async fetch(request) {
+    try {
+      const res = await fetch(SUKI_URL, {
+        headers: { "User-Agent": "Vercel-Sueta/1.0" },
+      });
+
+      if (!res.ok) {
+        return new Response("GitHub error: " + res.status, { status: 502 });
+      }
+
+      const text = await res.text();
+      const config = buildConfig(text);
+
+      return new Response(JSON.stringify(config, null, 2), {
+        status: 200,
+        headers: {
+          "Content-Type": "application/json; charset=utf-8",
+          "profile-title": "Sueta",
+          "profile-update-interval": "4",
+          "support-url": "https://t.me/SuetaVpna",
+          "profile-web-page-url": "https://t.me/SuetaVpna",
+        },
+      });
+    } catch (err) {
+      return new Response("Ошибка загрузки: " + err.message, { status: 502 });
+    }
+  },
 };
 
-export default async function handler(request) {
-  try {
-    const res = await fetch(SUKI_URL, {
-      headers: { "User-Agent": "Vercel-Sueta/1.0" },
-    });
-
-    if (!res.ok) {
-      return new Response("GitHub error: " + res.status, {
-        status: 502,
-      });
-    }
-
-    const text = await res.text();
-    const config = buildConfig(text);
-
-    return new Response(JSON.stringify(config, null, 2), {
-      status: 200,
-      headers: {
-        "Content-Type": "application/json; charset=utf-8",
-        "profile-title": "Sueta",
-        "profile-update-interval": "4",
-        "support-url": "https://t.me/SuetaVpna",
-        "profile-web-page-url": "https://t.me/SuetaVpna",
-      },
-    });
-  } catch (err) {
-    return new Response("Ошибка загрузки: " + err.message, {
-      status: 502,
-    });
-  }
-}
-
-// --- весь остальной код (buildConfig + parseLink) оставляешь без изменений ---
+// ===== дальше весь твой код без изменений =====
 
 function buildConfig(sukiText) {
   const lines = sukiText.split("\n").map(l => l.trim()).filter(Boolean);
@@ -55,9 +45,7 @@ function buildConfig(sukiText) {
       outbound.tag = `proxy-${String(i + 1).padStart(2, "0")}`;
       outbounds.push(outbound);
       names.push(name);
-    } catch (e) {
-      // пропускаем битые ссылки
-    }
+    } catch (e) {}
   });
 
   const dns = {
@@ -108,7 +96,6 @@ function buildConfig(sukiText) {
 
   const selector = outbounds.map(o => o.tag);
 
-  // ===== Auto профиль =====
   const autoConfig = {
     remarks: `🇷🇺Auto | ${outbounds.length} Servers`,
     dns,
@@ -158,7 +145,6 @@ function buildConfig(sukiText) {
     },
   };
 
-  // ===== Отдельные профили =====
   const configs = [autoConfig];
 
   outbounds.forEach((ob, i) => {
@@ -191,7 +177,6 @@ function parseLink(link) {
     name = decodeURIComponent(link.split("#").pop());
   }
 
-  // ===== Hysteria2 / hy2 =====
   if (link.startsWith("hy2://") || link.startsWith("hysteria2://")) {
     const raw = link.replace(/^hy2:\/\//, "").replace(/^hysteria2:\/\//, "");
     const [mainPart] = raw.split("#");
@@ -231,7 +216,6 @@ function parseLink(link) {
     };
   }
 
-  // ===== VLESS / Trojan =====
   const url = new URL(link);
   const protocol = url.protocol.replace(":", "");
   const uuidOrPass = decodeURIComponent(url.username);
@@ -286,13 +270,7 @@ function parseLink(link) {
       outbound: {
         protocol: "vless",
         settings: {
-          vnext: [
-            {
-              address: host,
-              port: port,
-              users: [user],
-            },
-          ],
+          vnext: [{ address: host, port: port, users: [user] }],
         },
         streamSettings: stream,
       },
@@ -322,13 +300,7 @@ function parseLink(link) {
       outbound: {
         protocol: "trojan",
         settings: {
-          servers: [
-            {
-              address: host,
-              password: uuidOrPass,
-              port: port,
-            },
-          ],
+          servers: [{ address: host, password: uuidOrPass, port: port }],
         },
         streamSettings: stream,
       },
