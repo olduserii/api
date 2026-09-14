@@ -1,3 +1,10 @@
+/**
+ * Vercel Edge Function — Sueta Config Generator
+ * Берёт suki.txt с GitHub → собирает полный конфиг
+ * Поддержка: VLESS (tcp/ws/grpc/xhttp), Trojan, Hysteria2, VMess
+ * + расширенный список российских доменов для direct
+ */
+
 const SUKI_URL = "https://raw.githubusercontent.com/gh8y4gwmsq-web/sUukaaa/refs/heads/main/suki.txt";
 
 export default {
@@ -30,8 +37,6 @@ export default {
   },
 };
 
-// ===== дальше весь твой код без изменений =====
-
 function buildConfig(sukiText) {
   const lines = sukiText.split("\n").map(l => l.trim()).filter(Boolean);
   const links = lines.filter(l => !l.startsWith("#"));
@@ -45,7 +50,9 @@ function buildConfig(sukiText) {
       outbound.tag = `proxy-${String(i + 1).padStart(2, "0")}`;
       outbounds.push(outbound);
       names.push(name);
-    } catch (e) {}
+    } catch (e) {
+      // пропускаем битые ссылки
+    }
   });
 
   const dns = {
@@ -84,18 +91,78 @@ function buildConfig(sukiText) {
   const block = { protocol: "blackhole", tag: "block" };
 
   const directDomains = [
-    "domain:vk.com", "domain:vk.ru", "domain:userapi.com",
-    "domain:yandex.ru", "domain:yandex.com", "domain:yandex.net", "domain:ya.ru", "domain:yastatic.net",
-    "domain:mail.ru", "domain:ok.ru", "domain:okko.tv", "domain:premier.one",
-    "domain:rutube.ru", "domain:wildberries.ru", "domain:wb.ru", "domain:avito.ru",
-    "domain:ozon.ru", "domain:hh.ru", "domain:lamoda.ru", "domain:rbc.ru",
-    "domain:rambler.ru", "domain:tutu.ru", "domain:auto.ru",
-    "domain:sberbank.ru", "domain:tinkoff.ru", "domain:alfabank.ru", "domain:vtb.ru",
-    "domain:gosuslugi.ru", "domain:mos.ru",
+    // === Соцсети и мессенджеры ===
+    "domain:vk.com", "domain:vk.ru", "domain:userapi.com", "domain:vk-cdn.net", "domain:vkuseraudio.net",
+    "domain:ok.ru", "domain:okcdn.ru",
+    "domain:max.ru", "domain:web.max.ru",
+    "domain:dzen.ru", "domain:dzeninfra.ru",
+
+    // === Яндекс ===
+    "domain:yandex.ru", "domain:yandex.com", "domain:yandex.net", "domain:ya.ru",
+    "domain:yastatic.net", "domain:yandex.st", "domain:yandexadexchange.net",
+    "domain:kinopoisk.ru", "domain:kp.yandex.net",
+
+    // === Mail.ru Group ===
+    "domain:mail.ru", "domain:imgsmail.ru", "domain:mycdn.me",
+
+    // === Видео / Стриминг ===
+    "domain:rutube.ru", "domain:rtb.ru",
+    "domain:okko.tv", "domain:okko.sport",
+    "domain:premier.one",
+    "domain:ivi.ru", "domain:ivi.tv",
+    "domain:wink.ru",
+    "domain:more.tv",
+    "domain:start.ru", "domain:start.film",
+
+    // === Маркетплейсы и ритейл ===
+    "domain:wildberries.ru", "domain:wb.ru", "domain:wbbasket.ru", "domain:wbstatic.net",
+    "domain:ozon.ru", "domain:ozonusercontent.com", "domain:ozone.ru",
+    "domain:avito.ru", "domain:avito.st",
+    "domain:lamoda.ru", "domain:lamoda.by",
+    "domain:dns-shop.ru",
+    "domain:mvideo.ru", "domain:eldorado.ru", "domain:citilink.ru",
+    "domain:technopark.ru", "domain:onlinetrade.ru",
+    "domain:petrovich.ru", "domain:leroymerlin.ru",
+    "domain:5ka.ru", "domain:pyaterochka.ru", "domain:perekrestok.ru", "domain:x5.ru",
+
+    // === Карты, недвижимость, авто ===
+    "domain:2gis.ru", "domain:2gis.com",
+    "domain:cian.ru", "domain:cian.site",
+    "domain:youla.ru",
+    "domain:drom.ru", "domain:auto.ru",
+
+    // === Банки и финансы ===
+    "domain:sberbank.ru", "domain:sber.ru", "domain:sberbank.com", "domain:sberdevices.ru",
+    "domain:tinkoff.ru", "domain:tbank.ru", "domain:tcsbank.ru",
+    "domain:alfabank.ru", "domain:alfabank.com",
+    "domain:vtb.ru", "domain:vtb.com",
+    "domain:gazprombank.ru", "domain:gpb.ru",
+    "domain:rshb.ru", "domain:open.ru", "domain:raiffeisen.ru",
+    "domain:rosbank.ru", "domain:sovcombank.ru", "domain:mkb.ru",
+    "domain:nspk.ru", "domain:sbp.ru", "domain:mironline.ru",
+    "domain:yoomoney.ru", "domain:money.yandex.ru",
+
+    // === Государство ===
+    "domain:gosuslugi.ru", "domain:gosuslugi.mos.ru",
+    "domain:mos.ru", "domain:mosreg.ru",
+    "domain:nalog.ru", "domain:nalog.gov.ru",
+    "domain:cbr.ru", "domain:cbrf.ru",
+    "domain:pfr.gov.ru", "domain:sfr.gov.ru",
+    "domain:gu-st.ru",
+
+    // === Работа ===
+    "domain:hh.ru", "domain:hhcdn.ru",
+    "domain:superjob.ru",
+
+    // === Прочее ===
+    "domain:rbc.ru", "domain:rambler.ru",
+    "domain:tutu.ru", "domain:tutu.travel",
+    "domain:delivery-club.ru", "domain:eda.yandex.ru", "domain:samokat.ru",
   ];
 
   const selector = outbounds.map(o => o.tag);
 
+  // ===== Auto профиль =====
   const autoConfig = {
     remarks: `🇷🇺Auto | ${outbounds.length} Servers`,
     dns,
@@ -145,6 +212,7 @@ function buildConfig(sukiText) {
     },
   };
 
+  // ===== Отдельные профили =====
   const configs = [autoConfig];
 
   outbounds.forEach((ob, i) => {
@@ -174,9 +242,10 @@ function buildConfig(sukiText) {
 function parseLink(link) {
   let name = "unnamed";
   if (link.includes("#")) {
-    name = decodeURIComponent(link.split("#").pop());
+    name = decodeURIComponent(link.split("#").pop() || "unnamed");
   }
 
+  // ===== Hysteria2 / hy2 =====
   if (link.startsWith("hy2://") || link.startsWith("hysteria2://")) {
     const raw = link.replace(/^hy2:\/\//, "").replace(/^hysteria2:\/\//, "");
     const [mainPart] = raw.split("#");
@@ -210,12 +279,80 @@ function parseLink(link) {
           tlsSettings: {
             alpn: (params.alpn || "h3").split(","),
             serverName: params.sni || host,
+            fingerprint: params.fp || "chrome",
           },
         },
       },
     };
   }
 
+  // ===== VMess =====
+  if (link.startsWith("vmess://")) {
+    const b64 = link.slice(8).split("#")[0];
+    const json = JSON.parse(atob(b64.replace(/-/g, "+").replace(/_/g, "/")));
+    const host = json.add || json.host;
+    const port = parseInt(json.port) || 443;
+    const uuid = json.id;
+    const network = (json.net || "tcp").toLowerCase();
+    const security = (json.tls === "tls" || json.tls === "reality") ? json.tls : "none";
+
+    const stream = {
+      network,
+      security,
+    };
+
+    if (security === "tls" || security === "reality") {
+      stream.tlsSettings = {
+        serverName: json.sni || host,
+        fingerprint: json.fp || "chrome",
+        alpn: json.alpn ? json.alpn.split(",") : undefined,
+      };
+      if (security === "reality") {
+        stream.realitySettings = {
+          publicKey: json.pbk,
+          shortId: json.sid || "",
+          serverName: json.sni || host,
+          fingerprint: json.fp || "chrome",
+        };
+        delete stream.tlsSettings;
+      }
+    }
+
+    if (network === "ws") {
+      stream.wsSettings = {
+        path: json.path || "/",
+        headers: json.host ? { Host: json.host } : {},
+      };
+    } else if (network === "grpc") {
+      stream.grpcSettings = {
+        serviceName: json.path || json.serviceName || "",
+        multiMode: false,
+      };
+    } else if (network === "tcp") {
+      stream.tcpSettings = { header: { type: json.type || "none" } };
+    }
+
+    return {
+      name: json.ps || name,
+      outbound: {
+        protocol: "vmess",
+        settings: {
+          vnext: [{
+            address: host,
+            port,
+            users: [{
+              id: uuid,
+              alterId: parseInt(json.aid) || 0,
+              security: json.scy || "auto",
+            }],
+          }],
+        },
+        streamSettings: stream,
+      },
+    };
+  }
+
+  // ===== VLESS / Trojan =====
   const url = new URL(link);
   const protocol = url.protocol.replace(":", "");
   const uuidOrPass = decodeURIComponent(url.username);
@@ -228,29 +365,33 @@ function parseLink(link) {
       encryption: params.encryption || "none",
       id: uuidOrPass,
     };
-    if (params.flow) user.flow = params.flow;
+    if (params.flow && params.flow !== "") user.flow = params.flow;
 
     const stream = {
-      network: params.type || "tcp",
+      network: (params.type || "tcp").toLowerCase(),
       security: params.security || "none",
     };
 
+    // Reality
     if (params.security === "reality") {
       stream.realitySettings = {
         fingerprint: params.fp || "firefox",
         publicKey: params.pbk,
-        serverName: params.sni,
+        serverName: params.sni || host,
       };
       if (params.sid) stream.realitySettings.shortId = params.sid;
       if (params.spx) stream.realitySettings.spiderX = decodeURIComponent(params.spx);
-    } else if (params.security === "tls") {
+    }
+    // TLS
+    else if (params.security === "tls") {
       stream.tlsSettings = {
         fingerprint: params.fp || "firefox",
-        serverName: params.sni,
+        serverName: params.sni || host,
       };
       if (params.alpn) stream.tlsSettings.alpn = params.alpn.split(",");
     }
 
+    // Transports
     if (stream.network === "tcp") {
       stream.tcpSettings = { header: { type: params.headerType || "none" } };
     } else if (stream.network === "ws") {
@@ -261,8 +402,25 @@ function parseLink(link) {
     } else if (stream.network === "grpc") {
       stream.grpcSettings = {
         multiMode: false,
-        serviceName: params.serviceName || "",
+        serviceName: params.serviceName || params.path || "",
       };
+    } else if (stream.network === "xhttp" || stream.network === "splithttp") {
+      stream.network = "xhttp";
+      stream.xhttpSettings = {
+        path: params.path || "/",
+        host: params.host || host,
+        mode: params.mode || "auto",
+      };
+
+      if (params.extra) {
+        try {
+          const extra = JSON.parse(decodeURIComponent(params.extra));
+          if (extra.xmux) stream.xhttpSettings.xmux = extra.xmux;
+          if (extra.xPaddingBytes) stream.xhttpSettings.xPaddingBytes = extra.xPaddingBytes;
+          if (extra.scMaxEachPostBytes) stream.xhttpSettings.scMaxEachPostBytes = extra.scMaxEachPostBytes;
+          if (extra.scMinPostsIntervalMs) stream.xhttpSettings.scMinPostsIntervalMs = extra.scMinPostsIntervalMs;
+        } catch (_) {}
+      }
     }
 
     return {
@@ -270,7 +428,11 @@ function parseLink(link) {
       outbound: {
         protocol: "vless",
         settings: {
-          vnext: [{ address: host, port: port, users: [user] }],
+          vnext: [{
+            address: host,
+            port,
+            users: [user],
+          }],
         },
         streamSettings: stream,
       },
@@ -279,20 +441,25 @@ function parseLink(link) {
 
   if (protocol === "trojan") {
     const stream = {
-      network: params.type || "tcp",
+      network: (params.type || "tcp").toLowerCase(),
       security: params.security || "tls",
     };
 
     if (stream.security === "tls") {
       stream.tlsSettings = {
         fingerprint: params.fp || "firefox",
-        serverName: params.sni,
+        serverName: params.sni || host,
       };
       if (params.alpn) stream.tlsSettings.alpn = params.alpn.split(",");
     }
 
     if (stream.network === "tcp") {
       stream.tcpSettings = { header: { type: params.headerType || "none" } };
+    } else if (stream.network === "ws") {
+      stream.wsSettings = {
+        path: params.path || "/",
+        headers: params.host ? { Host: params.host } : {},
+      };
     }
 
     return {
@@ -300,7 +467,11 @@ function parseLink(link) {
       outbound: {
         protocol: "trojan",
         settings: {
-          servers: [{ address: host, password: uuidOrPass, port: port }],
+          servers: [{
+            address: host,
+            password: uuidOrPass,
+            port,
+          }],
         },
         streamSettings: stream,
       },
